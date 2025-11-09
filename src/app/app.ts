@@ -1,14 +1,12 @@
-import { Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
-import { CommonModule } from '@angular/common';
-import { Sidebar } from "./layout/sidebar/sidebar";
-import { Navbar } from "./layout/navbar/navbar";
+import { LoadingIndicatorComponent } from './shared/components/loading-indicator.component';
+
 @Component({
   selector: 'app-root',
-  imports: [CommonModule, Sidebar, Navbar, RouterOutlet],
+  imports: [RouterOutlet, LoadingIndicatorComponent],
   templateUrl: './app.html',
-  styleUrl: './app.scss'
+  styleUrl: './app.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class App {
-  protected title = 'angular20';
-}
+export class App {}

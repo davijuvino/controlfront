@@ -1,0 +1,367 @@
+<div class="main-layout-container">
+  <!-- Environment Indicator -->
+  @if(environmentService.isDebugMode) {
+    <app-environment-indicator></app-environment-indicator>
+  }
+  
+  <!-- Main Layout -->
+  <mat-sidenav-container class="sidenav-container">
+    <mat-sidenav
+      #sidenav
+      [mode]="sidenavMode()"
+      [opened]="!isHandset()"
+      class="custom-sidenav"
+      [class.collapsed]="isSidenavCollapsed() && !isHandset()"
+      [fixedInViewport]="!isHandset()"
+      [fixedTopGap]="0">
+      <!-- Sidenav Header -->
+      <div class="sidenav-header">
+        <div class="logo-section" [class.collapsed]="isSidenavCollapsed() && !isHandset()">
+          <div class="logo-container">
+            <div class="logo-icon">
+              <mat-icon>business</mat-icon>
+            </div>
+            @if (!isSidenavCollapsed() || isHandset()) {
+              <div class="logo-text">
+                <h2>Admin Panel</h2>
+                <p>Management System</p>
+              </div>
+            }
+          </div>
+          
+          @if (!isHandset()) {
+            <button 
+              mat-icon-button 
+              (click)="toggleSidenav()" 
+              class="collapse-btn"
+              [matTooltip]="isSidenavCollapsed() ? 'Expand sidebar' : 'Collapse sidebar'"
+              matTooltipPosition="right"
+            >
+              <mat-icon>{{ isSidenavCollapsed() ? 'chevron_right' : 'chevron_left' }}</mat-icon>
+            </button>
+          }
+        </div>
+      </div>
+
+      <!-- Navigation Menu -->
+      <div class="navigation-section">
+        <!-- Search Item -->
+        <div class="nav-group search-group">
+          <mat-nav-list class="nav-list">
+            <mat-list-item 
+              class="nav-item search-nav-item" 
+              (click)="openSearch()"
+              [matTooltip]="(isSidenavCollapsed() && !isHandset()) ? 'Search (Ctrl+K)' : ''"
+              matTooltipPosition="right"
+            >
+              <mat-icon matListItemIcon>search</mat-icon>
+              @if (!isSidenavCollapsed() || isHandset()) {
+                <ng-container matListItemTitle>
+                  <span>Search</span>
+                  <span class="search-shortcut">⌘K</span>
+                </ng-container>
+              }
+            </mat-list-item>
+          </mat-nav-list>
+        </div>
+
+        <!-- Menu Groups -->
+        @for (group of menuGroups; track group.id) {
+          <div class="nav-group" [class.collapsed]="isMenuGroupCollapsed(group.id)">
+            <!-- Group Header -->
+            <div 
+              class="nav-group-header clickable" 
+              [class.collapsed]="isSidenavCollapsed() && !isHandset()"
+              (click)="toggleMenuGroup(group.id)"
+            >
+              @if (!isSidenavCollapsed() || isHandset()) {
+                <div class="group-header-content">
+                  <div class="group-title">
+                    <mat-icon class="group-icon">{{ group.icon }}</mat-icon>
+                    <span>{{ group.title }}</span>
+                  </div>
+                  <mat-icon class="expand-icon" [class.rotated]="!isMenuGroupCollapsed(group.id)">
+                    expand_more
+                  </mat-icon>
+                </div>
+              } @else {
+                <mat-icon 
+                  [matTooltip]="group.title" 
+                  matTooltipPosition="right" 
+                  class="group-icon-collapsed"
+                >
+                  {{ group.icon }}
+                </mat-icon>
+              }
+            </div>
+            
+            <!-- Group Items -->
+            @if (!isMenuGroupCollapsed(group.id) || (isSidenavCollapsed() && !isHandset())) {
+              <mat-nav-list class="nav-list">
+                @for (item of group.items; track item.route) {
+                  <!-- Parent Menu Item -->
+                  <div class="menu-item-container">
+                    <mat-list-item 
+                      class="nav-item" 
+                      [class.active]="isMenuItemActive()(item.route)"
+                      [class.has-children]="hasChildren(item)"
+                      [class.expanded]="hasChildren(item) && isMenuItemExpanded(item.route)"
+                      [routerLink]="!hasChildren(item) ? item.route : null"
+                      [routerLinkActive]="!hasChildren(item) ? 'active' : ''"
+                      [matTooltip]="(isSidenavCollapsed() && !isHandset()) ? item.tooltip : ''"
+                      matTooltipPosition="right"
+                      (click)="hasChildren(item) ? toggleMenuItem(item.route) : closeSidenav()"
+                    >
+                      <!-- Icon with better badge positioning -->
+                      <div class="nav-item-icon-container" matListItemIcon>
+                        <mat-icon class="nav-item-icon">{{ item.icon }}</mat-icon>
+                        @if (item.badge && (isSidenavCollapsed() && !isHandset())) {
+                          <span 
+                            class="icon-badge" 
+                            [class.number]="typeof item.badge === 'number'"
+                            [class.text]="typeof item.badge === 'string'"
+                          >
+                            {{ item.badge }}
+                          </span>
+                        }
+                      </div>
+                      
+                      @if (!isSidenavCollapsed() || isHandset()) {
+                        <ng-container matListItemTitle>
+                          <div class="nav-item-content">
+                            <div class="nav-item-main">
+                              <span class="nav-item-label">{{ item.label }}</span>
+                              @if (item.badge) {
+                                <span 
+                                  class="item-badge" 
+                                  [class.number]="typeof item.badge === 'number'"
+                                  [class.text]="typeof item.badge === 'string'"
+                                >
+                                  {{ item.badge }}
+                                </span>
+                              }
+                            </div>
+                            @if (hasChildren(item)) {
+                              <mat-icon class="expand-arrow" [class.rotated]="isMenuItemExpanded(item.route)">
+                                expand_more
+                              </mat-icon>
+                            }
+                          </div>
+                        </ng-container>
+                      }
+                    </mat-list-item>
+
+                    <!-- Simplified Children Items -->
+                    @if (hasChildren(item) && isMenuItemExpanded(item.route) && (!isSidenavCollapsed() || isHandset())) {
+                      <div class="sub-menu">
+                        @for (child of getChildrenItems(item); track child.route) {
+                          <mat-list-item 
+                            class="nav-item sub-item"
+                            [class.active]="isMenuItemActive()(child.route)"
+                            [routerLink]="child.route" 
+                            routerLinkActive="active"
+                            [matTooltip]="child.tooltip"
+                            matTooltipPosition="right"
+                            (click)="closeSidenav()"
+                          >
+                            <mat-icon matListItemIcon class="sub-item-icon">
+                              {{ child.icon }}
+                            </mat-icon>
+                            <span matListItemTitle>{{ child.label }}</span>
+                          </mat-list-item>
+                        }
+                      </div>
+                    }
+                  </div>
+                }
+              </mat-nav-list>
+            }
+          </div>
+        }
+
+        <!-- User Section -->
+        <div class="nav-group user-section">
+          <div class="nav-group-header" [class.collapsed]="isSidenavCollapsed() && !isHandset()">
+            @if (!isSidenavCollapsed() || isHandset()) {
+              <span>Account</span>
+            }
+          </div>
+          
+          <mat-nav-list class="nav-list">
+            @for (item of userMenuItems; track item.route) {
+              <mat-list-item 
+                class="nav-item" 
+                [class.active]="isMenuItemActive()(item.route)"
+                [routerLink]="item.route" 
+                routerLinkActive="active"
+                #rlaUser="routerLinkActive"
+                [matTooltip]="(isSidenavCollapsed() && !isHandset()) ? item.label : ''"
+                matTooltipPosition="right"
+                (click)="closeSidenav()">
+                <mat-icon matListItemIcon>{{ item.icon }}</mat-icon>
+                @if (!isSidenavCollapsed() || isHandset()) {
+                  <ng-container matListItemTitle>{{ item.label }}</ng-container>
+                }
+              </mat-list-item>
+            }
+            
+            <mat-divider class="nav-divider"></mat-divider>
+            
+            <mat-list-item 
+              class="nav-item logout-item" 
+              (click)="logout()"
+              [matTooltip]="(isSidenavCollapsed() && !isHandset()) ? 'Logout' : ''"
+              matTooltipPosition="right"
+            >
+              <mat-icon matListItemIcon>logout</mat-icon>
+              @if (!isSidenavCollapsed() || isHandset()) {
+                <ng-container matListItemTitle>Logout</ng-container>
+              }
+            </mat-list-item>
+          </mat-nav-list>
+        </div>
+      </div>
+
+      <!-- User Profile at Bottom (when expanded) -->
+      @if (!isSidenavCollapsed() || isHandset()) {
+        <div class="user-profile-section">
+          <div class="user-profile-card">
+            <div class="user-avatar">
+              @if (authService.user()?.avatar) {
+                <img [src]="authService.user()?.avatar" [alt]="authService.user()?.firstName" />
+              } @else {
+                <mat-icon>account_circle</mat-icon>
+              }
+            </div>
+            <div class="user-info">
+              <div class="user-name">{{ authService.user()?.firstName }} {{ authService.user()?.lastName }}</div>
+              <div class="user-role">Administrator</div>
+            </div>
+          </div>
+        </div>
+      }
+    </mat-sidenav>
+
+    <!-- Main Content -->
+    <mat-sidenav-content class="main-content" [style.margin-left]="contentMargin()">
+      <!-- Toolbar -->
+      <mat-toolbar class="custom-toolbar">
+        <div class="toolbar-left">
+          @if (isHandset()) {
+            <button
+              mat-icon-button
+              (click)="toggleSidenav()"
+              class="menu-toggle-btn"
+              matTooltip="Open menu"
+            >
+              <mat-icon>menu</mat-icon>
+            </button>
+          } @else if (!isSidenavCollapsed()) {
+            <button
+              mat-icon-button
+              (click)="toggleSidenav()"
+              class="menu-toggle-btn"
+              matTooltip="Collapse sidebar"
+            >
+              <mat-icon>menu_open</mat-icon>
+            </button>
+          }
+          
+          <div class="page-title">
+            <h1>{{ currentPageTitle() }}</h1>
+            @if (authService.user()?.firstName) {
+              <span class="welcome-text">Welcome back, {{ authService.user()?.firstName }}</span>
+            }
+          </div>
+        </div>
+
+        <div class="toolbar-right">
+          <!-- Quick Actions -->
+          <button
+            mat-icon-button
+            class="action-btn"
+            matTooltip="Notifications"
+            [matBadge]="3"
+            matBadgeColor="warn"
+            matBadgeSize="small"
+          >
+            <mat-icon>notifications</mat-icon>
+          </button>
+
+          <button
+            mat-icon-button
+            class="action-btn"
+            matTooltip="Search (Ctrl+K)"
+            (click)="openSearch()"
+          >
+            <mat-icon>search</mat-icon>
+          </button>
+
+          <!-- User Menu -->
+          <button
+            mat-button
+            [matMenuTriggerFor]="userMenu"
+            class="user-menu-trigger"
+          >
+            <div class="user-avatar-small">
+              @if (authService.user()?.avatar) {
+                <img [src]="authService.user()?.avatar" [alt]="authService.user()?.firstName" />
+              } @else {
+                <mat-icon>account_circle</mat-icon>
+              }
+            </div>
+            <!-- <span class="user-name-toolbar">{{ authService.user()?.firstName }}</span> -->
+            <mat-icon class="dropdown-arrow">keyboard_arrow_down</mat-icon>
+          </button>
+
+          <mat-menu #userMenu="matMenu" class="custom-user-menu">
+            <div class="user-menu-header">
+              <div class="user-avatar-menu">
+                @if (authService.user()?.avatar) {
+                  <img [src]="authService.user()?.avatar" [alt]="authService.user()?.firstName" />
+                } @else {
+                  <mat-icon>account_circle</mat-icon>
+                }
+              </div>
+              <div class="user-info-menu">
+                <div class="user-name">{{ authService.user()?.firstName }} {{ authService.user()?.lastName }}</div>
+                <div class="user-email">{{ authService.user()?.email }}</div>
+              </div>
+            </div>
+            
+            <mat-divider></mat-divider>
+            
+            <button mat-menu-item [routerLink]="['/profile']">
+              <mat-icon>person</mat-icon>
+              <span>My Profile</span>
+            </button>
+            
+            <button mat-menu-item [routerLink]="['/settings']">
+              <mat-icon>settings</mat-icon>
+              <span>Settings</span>
+            </button>
+            
+            <button mat-menu-item>
+              <mat-icon>help</mat-icon>
+              <span>Help & Support</span>
+            </button>
+            
+            <mat-divider></mat-divider>
+            
+            <button mat-menu-item (click)="logout()" class="logout-menu-item">
+              <mat-icon>logout</mat-icon>
+              <span>Sign Out</span>
+            </button>
+          </mat-menu>
+        </div>
+      </mat-toolbar>
+
+      <!-- Page Content -->
+      <div class="page-content">
+        <div class="content-wrapper">
+          <router-outlet></router-outlet>
+        </div>
+      </div>
+    </mat-sidenav-content>
+  </mat-sidenav-container>
+</div>
